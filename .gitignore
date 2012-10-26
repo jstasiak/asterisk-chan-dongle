@@ -1,0 +1,17 @@
+.INSTALL.swp
+.gitignore
+Makefile
+aclocal.m4
+autom4te.cache/
+config.guess
+config.h
+config.log
+config.status
+config.sub
+configure
+install-sh
+missing
+stamp-h1
+
+*.o
+*.o.d
