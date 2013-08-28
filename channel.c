@@ -1352,6 +1352,7 @@ static int channel_func_read(struct ast_channel* channel, attribute_unused const
 static int channel_func_write(struct ast_channel* channel, const char* function, char* data, const char* value)
 {
 	struct cpvt* cpvt = ast_channel_tech_pvt(channel);
+	struct pvt* pvt = cpvt->pvt;
 	call_state_t newstate, oldstate;
 	int ret = 0;
 
