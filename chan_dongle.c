@@ -51,6 +51,11 @@ ASTERISK_FILE_VERSION(__FILE__, "$Rev: " PACKAGE_REVISION " $")
 #include <asterisk/module.h>		/* AST_MODULE_LOAD_DECLINE ... */
 #include <asterisk/timing.h>		/* ast_timer_open() ast_timer_fd() */
 
+#if ASTERISK_VERSION_NUM >= 130000 /* 13+ */
+    #include "asterisk/stasis_channels.h"
+    #include "asterisk/format_cache.h"
+#endif
+
 #include <sys/stat.h>			/* S_IRUSR | S_IRGRP | S_IROTH */
 #include <termios.h>			/* struct termios tcgetattr() tcsetattr()  */
 #include <pthread.h>			/* pthread_t pthread_kill() pthread_join() */
@@ -72,9 +77,10 @@ ASTERISK_FILE_VERSION(__FILE__, "$Rev: " PACKAGE_REVISION " $")
 
 EXPORT_DEF const char * const dev_state_strs[4] = { "stop", "restart", "remove", "start" };
 EXPORT_DEF public_state_t * gpublic;
+#if ASTERISK_VERSION_NUM < 130000 /* -13 */
 EXPORT_DEF struct ast_format chan_dongle_format;
 EXPORT_DEF struct ast_format_cap * chan_dongle_format_cap;
-
+#endif
 
 static int public_state_init(struct public_state * state);
 
@@ -350,7 +356,7 @@ EXPORT_DEF void clean_read_data(const char * devname, int fd)
 	struct ringbuffer rb;
 	int iovcnt;
 	int t;
-	
+
 	rb_init (&rb, buf, sizeof (buf));
 	for (t = 0; at_wait(fd, &t); t = 0)
 	{
@@ -394,7 +400,7 @@ static void* do_monitor_phone (void* data)
 	ast_copy_string(dev, PVT_ID(pvt), sizeof(dev));
 
 	clean_read_data(dev, fd);
-	
+
 	/* schedule dongle initilization  */
 	if (at_enque_initialization (&pvt->sys_chan, CMD_AT))
 	{
@@ -530,39 +536,39 @@ static int pvt_discovery(struct pvt * pvt)
 		ast_copy_string(imei, CONF_UNIQ(pvt, imei), sizeof(imei));
 		ast_copy_string(imsi, CONF_UNIQ(pvt, imsi), sizeof(imsi));
 
-		ast_debug(3, "[%s] Trying ports discovery for%s%s%s%s\n", 
-			PVT_ID(pvt), 
-			imei[0] == 0 ? "" : " IMEI ", 
-			imei, 
-			imsi[0] == 0 ? "" : " IMSI ", 
+		ast_debug(3, "[%s] Trying ports discovery for%s%s%s%s\n",
+			PVT_ID(pvt),
+			imei[0] == 0 ? "" : " IMEI ",
+			imei,
+			imsi[0] == 0 ? "" : " IMSI ",
 			imsi
 			);
 		ast_mutex_unlock (&pvt->lock);
 //sleep(10); // test
 		resolved = pdiscovery_lookup(devname, imei, imsi, &data_tty, &audio_tty);
 		ast_mutex_lock (&pvt->lock);
-		
+
 		if(resolved) {
 			ast_copy_string (PVT_STATE(pvt, data_tty),  data_tty,  sizeof (PVT_STATE(pvt, data_tty)));
 			ast_copy_string (PVT_STATE(pvt, audio_tty), audio_tty, sizeof (PVT_STATE(pvt, audio_tty)));
 
 			ast_free(audio_tty);
 			ast_free(data_tty);
-			ast_verb (3, "[%s]%s%s%s%s found on data_tty=%s audio_tty=%s\n", 
-				PVT_ID(pvt), 
-				imei[0] == 0 ? "" : " IMEI ", 
-				imei, 
-				imsi[0] == 0 ? "" : " IMSI ", 
+			ast_verb (3, "[%s]%s%s%s%s found on data_tty=%s audio_tty=%s\n",
+				PVT_ID(pvt),
+				imei[0] == 0 ? "" : " IMEI ",
+				imei,
+				imsi[0] == 0 ? "" : " IMSI ",
 				imsi,
-				PVT_STATE(pvt, data_tty), 
+				PVT_STATE(pvt, data_tty),
 				PVT_STATE(pvt, audio_tty)
 				);
 		} else {
-			ast_debug(3, "[%s] Not found ports for%s%s%s%s\n", 
-				PVT_ID(pvt), 
-				imei[0] == 0 ? "" : " IMEI ", 
-				imei, 
-				imsi[0] == 0 ? "" : " IMSI ", 
+			ast_debug(3, "[%s] Not found ports for%s%s%s%s\n",
+				PVT_ID(pvt),
+				imei[0] == 0 ? "" : " IMEI ",
+				imei,
+				imsi[0] == 0 ? "" : " IMSI ",
 				imsi
 				);
 		}
@@ -855,14 +861,14 @@ EXPORT_DECL int pvt_enabled(const struct pvt * pvt)
 #/* */
 EXPORT_DEF int ready4voice_call(const struct pvt* pvt, const struct cpvt * current_cpvt, int opts)
 {
-	if(!pvt->connected 
-		|| 
+	if(!pvt->connected
+		||
 	   !pvt->initialized
-		|| 
-	   !pvt->has_voice 
-		|| 
-	   !pvt->gsm_registered 
-		|| 
+		||
+	   !pvt->has_voice
+		||
+	   !pvt->gsm_registered
+		||
 	   !pvt_enabled(pvt)
 	)
 		return 0;
@@ -1462,7 +1468,7 @@ static int pvt_reconfigure(struct pvt * pvt, const pvt_config_t * settings, rest
 		/* check what changes require starting or stopping */
 		if(pvt->desired_state != SCONFIG(settings, initstate)) {
 			pvt->desired_state = SCONFIG(settings, initstate);
-			
+
 			rv = pvt_time4restate(pvt);
 			pvt->restart_time = rv ? RESTATE_TIME_NOW : when;
 		}
@@ -1650,7 +1656,7 @@ static int load_module()
 static int public_state_init(struct public_state * state)
 {
 	int rv = AST_MODULE_LOAD_DECLINE;
-	
+
 	AST_RWLIST_HEAD_INIT(&state->devices);
 	ast_mutex_init(&state->discovery_lock);
 
@@ -1662,13 +1668,19 @@ static int public_state_init(struct public_state * state)
 		rv = AST_MODULE_LOAD_FAILURE;
 		if(discovery_restart(state) == 0)
 		{
-#if ASTERISK_VERSION_NUM >= 100000 /* 10+ */
 			/* set preferred capabilities */
-		        ast_format_set(&chan_dongle_format, AST_FORMAT_SLINEAR, 0);
-		        if (!(channel_tech.capabilities = ast_format_cap_alloc())) {
-                		return AST_MODULE_LOAD_FAILURE;
-		        }
-		        ast_format_cap_add(channel_tech.capabilities, &chan_dongle_format);
+#if ASTERISK_VERSION_NUM >= 130000 /* 13+ */
+            if (!(channel_tech.capabilities = ast_format_cap_alloc(AST_FORMAT_CAP_FLAG_DEFAULT))) {
+                return AST_MODULE_LOAD_FAILURE;
+            }
+            ast_format_cap_append(channel_tech.capabilities, ast_format_slin, 0);
+            //chan_dongle_format_cap = channel_tech.capabilities;
+#elif ASTERISK_VERSION_NUM >= 100000 /* 10-13 */
+	        ast_format_set(&chan_dongle_format, AST_FORMAT_SLINEAR, 0);
+	        if (!(channel_tech.capabilities = ast_format_cap_alloc())) {
+               		return AST_MODULE_LOAD_FAILURE;
+	        }
+	        ast_format_cap_add(channel_tech.capabilities, &chan_dongle_format);
 			chan_dongle_format_cap = channel_tech.capabilities;
 #endif
 
@@ -1684,7 +1696,10 @@ static int public_state_init(struct public_state * state)
 			}
 			else
 			{
-#if ASTERISK_VERSION_NUM >= 100000 /* 10+ */
+#if ASTERISK_VERSION_NUM >= 130000 /* 13+ */
+		        ao2_cleanup(channel_tech.capabilities);
+		        channel_tech.capabilities = NULL;
+#elif ASTERISK_VERSION_NUM >= 100000 /* 10-13 */
 				channel_tech.capabilities = ast_format_cap_destroy(channel_tech.capabilities);
 #endif
 				ast_log (LOG_ERROR, "Unable to register channel class %s\n", channel_tech.type);
@@ -1714,7 +1729,10 @@ static void public_state_fini(struct public_state * state)
 {
 	/* First, take us out of the channel loop */
 	ast_channel_unregister (&channel_tech);
-#if ASTERISK_VERSION_NUM >= 100000 /* 10+ */
+#if ASTERISK_VERSION_NUM >= 130000 /* 13+ */
+    ao2_cleanup(channel_tech.capabilities);
+    channel_tech.capabilities = NULL;
+#elif ASTERISK_VERSION_NUM >= 100000 /* 10-13 */
 	channel_tech.capabilities = ast_format_cap_destroy(channel_tech.capabilities);
 #endif
 
@@ -1728,7 +1746,7 @@ static void public_state_fini(struct public_state * state)
 
 	discovery_stop(state);
 	devices_destroy(state);
-	
+
 	ast_mutex_destroy(&state->round_robin_mtx);
 	ast_mutex_destroy(&state->discovery_lock);
 	AST_RWLIST_HEAD_DESTROY(&state->devices);
@@ -1739,7 +1757,7 @@ static int unload_module()
 
 	public_state_fini(gpublic);
 	pdiscovery_fini();
-	
+
 	ast_free(gpublic);
 	gpublic = NULL;
 	return 0;
@@ -1763,10 +1781,16 @@ static int reload_module()
 }
 
 AST_MODULE_INFO(ASTERISK_GPL_KEY, AST_MODFLAG_DEFAULT, MODULE_DESCRIPTION,
+#if ASTERISK_VERSION_NUM >= 130000 /* 13+ */
+		.support_level = AST_MODULE_SUPPORT_EXTENDED,
+#endif
 		.load = load_module,
 		.unload = unload_module,
 		.reload = reload_module,
-	       );
+#if ASTERISK_VERSION_NUM >= 130000 /* 13+ */
+		.load_pri = AST_MODPRI_CHANNEL_DRIVER,
+#endif
+        );
 
 //AST_MODULE_INFO_STANDARD (ASTERISK_GPL_KEY, MODULE_DESCRIPTION);
 

@@ -1,9 +1,9 @@
-/* 
+/*
    Copyright (C) 2009 - 2010
-   
+
    Artem Makhutov <artem@makhutov.org>
    http://www.makhutov.org
-   
+
    Dmitry Vagin <dmitry2004@yandex.ru>
 */
 #ifndef CHAN_DONGLE_H_INCLUDED
@@ -34,8 +34,10 @@ INLINE_DECL const char * dev_state2str_msg(dev_state_t state)
 }
 
 /* Only linear is allowed */
-EXPORT_DECL struct ast_format chan_dongle_format;
+#if ASTERISK_VERSION_NUM < 130000 /* -13 */
+EXPORT_DEF struct ast_format chan_dongle_format;
 EXPORT_DECL struct ast_format_cap * chan_dongle_format_cap;
+#endif
 
 typedef enum {
 	RESTATE_TIME_NOW	= 0,
@@ -123,7 +125,7 @@ typedef struct pvt
 //	char			a_read_buf[FRAME_SIZE + AST_FRIENDLY_OFFSET];	/*!< audio read buffer */
 //	struct ast_frame	a_read_frame;			/*!< readed frame buffer */
 
-	
+
 	char			dtmf_digit;			/*!< last DTMF digit */
 	struct timeval		dtmf_begin_time;		/*!< time of begin of last DTMF digit */
 	struct timeval		dtmf_end_time;			/*!< time of end of last DTMF digit */
