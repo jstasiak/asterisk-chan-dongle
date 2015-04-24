@@ -133,7 +133,7 @@ static ssize_t hexstr_ucs2_to_utf8 (const char* in, size_t in_length, char* out,
 		return res;
 	}
 
-	res = convert_string (buf, res, out, out_size, "UCS-2BE", "UTF-8");
+	res = convert_string (buf, res, out, out_size, "UTF-16BE", "UTF-8");
 
 	return res;
 }
