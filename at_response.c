@@ -1,9 +1,9 @@
-/* 
+/*
    Copyright (C) 2009 - 2010
-   
+
    Artem Makhutov <artem@makhutov.org>
    http://www.makhutov.org
-   
+
    Dmitry Vagin <dmitry2004@yandex.ru>
 
    bg <bg_one@mail.ru>
@@ -213,7 +213,7 @@ static int at_response_ok (struct pvt* pvt, at_res_t res)
 
 			case CMD_AT_A:
 			case CMD_AT_CHLD_2x:
-/* not work, ^CONN: appear before OK for CHLD_ANSWER 
+/* not work, ^CONN: appear before OK for CHLD_ANSWER
 				task->cpvt->answered = 1;
 				task->cpvt->needhangup = 1;
 */
@@ -838,7 +838,11 @@ static int start_pbx(struct pvt* pvt, const char * number, int call_idx, call_st
 	struct cpvt* cpvt;
 
 	/* TODO: pass also Subscriber number or other DID info for exten  */
+#if ASTERISK_VERSION_NUM >= 130000 /* 13+ */
+	struct ast_channel * channel = new_channel (pvt, AST_STATE_RING, number, call_idx, CALL_DIR_INCOMING, state, pvt->has_subscriber_number ? pvt->subscriber_number : CONF_SHARED(pvt, exten), NULL, NULL);
+#else
 	struct ast_channel * channel = new_channel (pvt, AST_STATE_RING, number, call_idx, CALL_DIR_INCOMING, state, pvt->has_subscriber_number ? pvt->subscriber_number : CONF_SHARED(pvt, exten), NULL);
+#endif
 
 	if (!channel)
 	{
@@ -851,14 +855,18 @@ static int start_pbx(struct pvt* pvt, const char * number, int call_idx, call_st
 
 		return -1;
 	}
-	cpvt = channel->tech_pvt;
+
+	cpvt = ast_channel_tech_pvt(channel);
 // FIXME: not execute if channel_new() failed
 	CPVT_SET_FLAGS(cpvt, CALL_FLAG_NEED_HANGUP);
 
 	// ast_pbx_start() usually failed if asterisk.conf minmemfree set too low, try drop buffer cache sync && echo 3 > /proc/sys/vm/drop_caches
+#if ASTERISK_VERSION_NUM >= 130000 /* 13+ */
+	ast_channel_unlock(channel);
+#endif
 	if (ast_pbx_start (channel))
 	{
-		channel->tech_pvt = NULL;
+		ast_channel_tech_pvt_set(channel, NULL);
 		cpvt_free(cpvt);
 
 		ast_hangup (channel);
@@ -920,7 +928,9 @@ static int at_response_clcc (struct pvt* pvt, char* str)
 								if(cpvt->channel)
 								{
 									/* FIXME: unprotected channel access */
-									cpvt->channel->rings += pvt->rings;
+									int rings = ast_channel_rings(cpvt->channel);
+									rings += pvt->rings;
+									ast_channel_rings_set(cpvt->channel, rings);
 									pvt->rings = 0;
 								}
 							}
@@ -1038,7 +1048,7 @@ static int at_response_ccwa(struct pvt* pvt, char* str)
 	int status, n;
 	unsigned class;
 
-	/* 
+	/*
 	 * CCWA may be in form:
 	 *	in response of AT+CCWA=?
 	 *		+CCWA: (0,1)
@@ -1244,7 +1254,7 @@ static int at_response_cmgr (struct pvt* pvt, const char * str, size_t len)
 		manager_event_new_sms(PVT_ID(pvt), number, msg);
 		manager_event_new_sms_base64(PVT_ID(pvt), number, text_base64);
 		{
-			channel_var_t vars[] = 
+			channel_var_t vars[] =
 			{
 				{ "SMS", msg } ,
 				{ "SMS_BASE64", text_base64 },
@@ -1367,7 +1377,7 @@ static int at_response_cusd (struct pvt * pvt, char * str, size_t len)
 	manager_event_message("DongleNewUSSDBase64", PVT_ID(pvt), text_base64);
 
 	{
-		channel_var_t vars[] = 
+		channel_var_t vars[] =
 		{
 			{ "USSD_TYPE", typebuf },
 			{ "USSD_TYPE_STR", ast_strdupa(typestr) },
