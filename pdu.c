@@ -181,43 +181,46 @@
 		  ...
 */
 
+/* 3GPP TS 23.040 */
 #define NUMBER_TYPE_INTERNATIONAL		0x91
+#define NUMBER_TYPE_NETWORKSHORT		0xB1
+#define NUMBER_TYPE_UNKNOWN				0x81
 
 /* Message Type Indicator Parameter */
-#define PDUTYPE_MTI_SHIFT			0
+#define PDUTYPE_MTI_SHIFT				0
 #define PDUTYPE_MTI_SMS_DELIVER			(0x00 << PDUTYPE_MTI_SHIFT)
-#define PDUTYPE_MTI_SMS_DELIVER_REPORT		(0x00 << PDUTYPE_MTI_SHIFT)
+#define PDUTYPE_MTI_SMS_DELIVER_REPORT	(0x00 << PDUTYPE_MTI_SHIFT)
 #define PDUTYPE_MTI_SMS_SUBMIT			(0x01 << PDUTYPE_MTI_SHIFT)
-#define PDUTYPE_MTI_SMS_SUBMIT_REPORT		(0x01 << PDUTYPE_MTI_SHIFT)
-#define PDUTYPE_MTI_SMS_STATUS_REPORT		(0x02 << PDUTYPE_MTI_SHIFT)
+#define PDUTYPE_MTI_SMS_SUBMIT_REPORT	(0x01 << PDUTYPE_MTI_SHIFT)
+#define PDUTYPE_MTI_SMS_STATUS_REPORT	(0x02 << PDUTYPE_MTI_SHIFT)
 #define PDUTYPE_MTI_SMS_COMMAND			(0x02 << PDUTYPE_MTI_SHIFT)
 #define PDUTYPE_MTI_RESERVED			(0x03 << PDUTYPE_MTI_SHIFT)
 
-#define PDUTYPE_MTI_MASK			(0x03 << PDUTYPE_MTI_SHIFT)
+#define PDUTYPE_MTI_MASK				(0x03 << PDUTYPE_MTI_SHIFT)
 #define PDUTYPE_MTI(pdutype)			((pdutype) & PDUTYPE_MTI_MASK)
 
 /* Reject Duplicate */
-#define PDUTYPE_RD_SHIFT			2
-#define PDUTYPE_RD_ACCEPT			(0x00 << PDUTYPE_RD_SHIFT)
-#define PDUTYPE_RD_REJECT			(0x01 << PDUTYPE_RD_SHIFT)
+#define PDUTYPE_RD_SHIFT				2
+#define PDUTYPE_RD_ACCEPT				(0x00 << PDUTYPE_RD_SHIFT)
+#define PDUTYPE_RD_REJECT				(0x01 << PDUTYPE_RD_SHIFT)
 
 /* Validity Period Format */
-#define PDUTYPE_VPF_SHIFT			3
+#define PDUTYPE_VPF_SHIFT				3
 #define PDUTYPE_VPF_NOT_PRESENT			(0x00 << PDUTYPE_VPF_SHIFT)
 #define PDUTYPE_VPF_RESERVED			(0x01 << PDUTYPE_VPF_SHIFT)
 #define PDUTYPE_VPF_RELATIVE			(0x02 << PDUTYPE_VPF_SHIFT)
 #define PDUTYPE_VPF_ABSOLUTE			(0x03 << PDUTYPE_VPF_SHIFT)
 
 /* Status Report Request */
-#define PDUTYPE_SRR_SHIFT			5
+#define PDUTYPE_SRR_SHIFT				5
 #define PDUTYPE_SRR_NOT_REQUESTED		(0x00 << PDUTYPE_SRR_SHIFT)
 #define PDUTYPE_SRR_REQUESTED			(0x01 << PDUTYPE_SRR_SHIFT)
 
 /* User Data Header Indicator */
-#define PDUTYPE_UDHI_SHIFT			6
+#define PDUTYPE_UDHI_SHIFT				6
 #define PDUTYPE_UDHI_NO_HEADER			(0x00 << PDUTYPE_UDHI_SHIFT)
 #define PDUTYPE_UDHI_HAS_HEADER			(0x01 << PDUTYPE_UDHI_SHIFT)
-#define PDUTYPE_UDHI_MASK			(0x01 << PDUTYPE_UDHI_SHIFT)
+#define PDUTYPE_UDHI_MASK				(0x01 << PDUTYPE_UDHI_SHIFT)
 #define PDUTYPE_UDHI(pdutype)			((pdutype) & PDUTYPE_UDHI_MASK)
 
 /* eply Path Parameter */
@@ -562,8 +565,15 @@ EXPORT_DEF int pdu_build(char* buffer, size_t length, const char* sca, const cha
 	if(sca[0] == '+')
 		sca++;
 
-	if(dst[0] == '+')
+	if(dst[0] == '+') {
 		dst++;
+	} else {
+		if (strlen(dst)<6) {
+			dst_toa=NUMBER_TYPE_NETWORKSHORT; // 0xb1
+		} else {
+			dst_toa=NUMBER_TYPE_UNKNOWN; // 0x81
+		}
+	}
 
 	/* count length of strings */
 	sca_len = strlen(sca);
