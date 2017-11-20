@@ -185,6 +185,8 @@
 #define NUMBER_TYPE_INTERNATIONAL		0x91
 #define NUMBER_TYPE_NETWORKSHORT		0xB1
 #define NUMBER_TYPE_UNKNOWN				0x81
+#define NUMBER_TYPE_NATIONAL			0xC8
+#define NUMBER_TYPE_ALPHANUMERIC		0xD0
 
 /* Message Type Indicator Parameter */
 #define PDUTYPE_MTI_SHIFT				0
@@ -232,6 +234,7 @@
 
 #define PDU_PID_SMS				0x00		/* bit5 No interworking, but SME-to-SME protocol = SMS */
 #define PDU_PID_EMAIL				0x32		/* bit5 Telematic interworking, bits 4..0 0x 12  = email */
+#define PDU_PID_SMS_REPLACE_MASK		0x40		/* bit7 Replace Short Message function activated (TP-PID = 0x41 to 0x47) */
 
 /* DCS */
 /*   bits 1..0 Class */
@@ -458,6 +461,14 @@ static int pdu_parse_number(char ** pdu, size_t * pdu_length, unsigned digits, i
 			signed char digit;
 			if(*toa == NUMBER_TYPE_INTERNATIONAL)
 				*number++ = '+';
+				// BEGIN oioki proposed patch 2013-07-24
+				if(*toa == NUMBER_TYPE_ALPHANUMERIC)
+				{
+					for(; syms > 0; syms --, *pdu += 1, *pdu_length -= 1)
+						*number++ = pdu[0][0];
+						return *pdu - begin;
+				}
+				// END oioki proposed patch 2013-07-24<
 			for(; syms > 0; syms -= 2, *pdu += 2, *pdu_length -= 2)
 			{
 				digit = pdu_code2digit(pdu[0][1]);
@@ -700,10 +711,12 @@ EXPORT_DEF const char * pdu_parse(char ** pdu, size_t tpdu_length, char * oa, si
 					{
 						int pid = pdu_parse_byte(pdu, &pdu_length);
 						*oa_enc = STR_ENCODING_7BIT;
+						if (oa_toa==NUMBER_TYPE_ALPHANUMERIC)
+							*oa_enc = STR_ENCODING_7BIT_HEX;
 						if(pid >= 0)
 						{
 						   /* TODO: support other types of messages */
-						   if(pid == PDU_PID_SMS)
+						   if( (pid == PDU_PID_SMS) || (pid & PDU_PID_SMS_REPLACE_MASK) )
 						   {
 							int dcs = pdu_parse_byte(pdu, &pdu_length);
 							if(dcs >= 0)
