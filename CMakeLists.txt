@@ -28,6 +28,7 @@ add_definitions(-DBUILD_APPLICATIONS)
 #add_definitions(-DMODULE_VERSION="1")
 #add_definitions(-DMODULE_BUGREPORT="")
 #add_definitions(-DMODULE_URL="")
+add_definitions(-DBUILD_MANAGER)
 
 # name of asterisk module 
 add_definitions(-DAST_MODULE="chan_dongle")
