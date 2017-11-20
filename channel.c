@@ -1029,6 +1029,10 @@ static int channel_indicate (struct ast_channel* channel, int condition, const v
 			ast_moh_stop (channel);
 			break;
 
+		case AST_CONTROL_CONNECTED_LINE:
+			res = -1;
+			break;
+
 		default:
 			ast_log (LOG_WARNING, "[%s] Don't know how to indicate condition %d\n", ast_channel_name(channel), condition);
 			res = -1;
