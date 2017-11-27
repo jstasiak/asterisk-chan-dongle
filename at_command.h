@@ -168,6 +168,5 @@ EXPORT_DECL int at_enque_activate (struct cpvt * cpvt);
 EXPORT_DECL int at_enque_flip_hold (struct cpvt * cpvt);
 EXPORT_DECL int at_enque_conference (struct cpvt * cpvt);
 EXPORT_DECL void at_hangup_immediality(struct cpvt * cpvt);
-EXPORT_DECL int set_cpms_sm ();
 
 #endif /* CHAN_DONGLE_AT_SEND_H_INCLUDED */
