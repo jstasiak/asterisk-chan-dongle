@@ -685,7 +685,9 @@ static str_encoding_t pdu_dcs_alpabet2encoding(int alpabet)
  * \return 0 on success
  */
 /* TODO: split long function */
-EXPORT_DEF const char * pdu_parse(char ** pdu, size_t tpdu_length, char * oa, size_t oa_len, str_encoding_t * oa_enc, char ** msg, str_encoding_t * msg_enc)
+EXPORT_DEF const char * pdu_parse(char ** pdu, size_t tpdu_length, char * oa, size_t oa_len,
+								  str_encoding_t * oa_enc, char ** msg, str_encoding_t * msg_enc,
+								  int* msg_ref, int* msg_parts, int* msg_part)
 {
 	const char * err = NULL;
 	size_t pdu_length = strlen(*pdu);
@@ -756,9 +758,20 @@ EXPORT_DEF const char * pdu_parse(char ** pdu, size_t tpdu_length, char * oa, si
 													/* NOTE: UDHL count octets no need calculation */
 													if(pdu_length >= (size_t)(udhl * 2))
 													{
-														/* skip UDH */
+														/* skip UDH
 														*pdu += udhl * 2;
-														pdu_length -= udhl * 2;
+														pdu_length -= udhl * 2; */
+
+														/* Information element identifier */
+														pdu_parse_byte(pdu, &pdu_length);
+														/* Reminder length */
+														pdu_parse_byte(pdu, &pdu_length);
+														/* CSMS reference number  */
+														*msg_ref = pdu_parse_byte(pdu, &pdu_length);
+														/* Total number of parts  */
+														*msg_parts = pdu_parse_byte(pdu, &pdu_length);
+														/* This part's number  */
+														*msg_part = pdu_parse_byte(pdu, &pdu_length);
 													}
 													else
 													{

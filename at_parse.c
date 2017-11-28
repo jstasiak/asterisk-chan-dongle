@@ -272,7 +272,9 @@ EXPORT_DEF int at_parse_cmti (const char* str)
 }
 
 
-static const char * parse_cmgr_text(char ** str, size_t len, char * oa, size_t oa_len, str_encoding_t * oa_enc, char ** msg, str_encoding_t * msg_enc)
+static const char * parse_cmgr_text(char ** str, size_t len, char * oa, size_t oa_len,
+									str_encoding_t * oa_enc, char ** msg, str_encoding_t * msg_enc,
+									int* msg_ref, int* msg_parts, int* msg_part)
 {
 	/*
 	 * parse cmgr info in the following TEXT format:
@@ -316,7 +318,9 @@ static const char * parse_cmgr_text(char ** str, size_t len, char * oa, size_t o
 	return "Can't parse +CMGR response text";
 }
 
-static const char* parse_cmgr_pdu(char** str, attribute_unused size_t len, char* oa, size_t oa_len, str_encoding_t* oa_enc, char** msg, str_encoding_t* msg_enc)
+static const char* parse_cmgr_pdu(char** str, attribute_unused size_t len, char* oa, size_t oa_len,
+								  str_encoding_t* oa_enc, char** msg, str_encoding_t* msg_enc,
+								  int* msg_ref, int* msg_parts, int* msg_part)
 {
 	/*
 	 * parse cmgr info in the following PDU format
@@ -341,7 +345,7 @@ static const char* parse_cmgr_pdu(char** str, attribute_unused size_t len, char*
 		if(tpdu_length <= 0 || end[0] != '\r')
 			return "Invalid TPDU length in CMGR PDU status line";
 		*str = marks[2] + 1;
-		return pdu_parse(str, tpdu_length, oa, oa_len, oa_enc, msg, msg_enc);
+		return pdu_parse(str, tpdu_length, oa, oa_len, oa_enc, msg, msg_enc, msg_ref, msg_parts, msg_part);
 	}
 
 	return "Can't parse +CMGR response";
@@ -358,7 +362,9 @@ static const char* parse_cmgr_pdu(char** str, attribute_unused size_t len, char*
  * \retval -1 parse error
  */
 
-EXPORT_DEF const char * at_parse_cmgr(char ** str, size_t len, char * oa, size_t oa_len, str_encoding_t * oa_enc, char ** msg, str_encoding_t * msg_enc)
+EXPORT_DEF const char * at_parse_cmgr(char ** str, size_t len, char * oa, size_t oa_len,
+									  str_encoding_t * oa_enc, char ** msg, str_encoding_t * msg_enc,
+									  int* msg_ref, int* msg_parts, int* msg_part)
 {
 	const char* rv = "Can't parse +CMGR response line";
 
@@ -376,10 +382,12 @@ EXPORT_DEF const char * at_parse_cmgr(char ** str, size_t len, char * oa, size_t
 	if(len > 0)
 	{
 		/* check PDU or TEXT mode */
-		const char* (*fptr)(char** str, size_t len, char* num, size_t num_len, str_encoding_t * oa_enc, char** msg, str_encoding_t * msg_enc);
+		const char* (*fptr)(char** str, size_t len, char* num, size_t num_len,
+							str_encoding_t * oa_enc, char** msg, str_encoding_t * msg_enc,
+							int* msg_ref, int* msg_parts, int* msg_part);
 		fptr = str[0][0] == '"' ? parse_cmgr_text : parse_cmgr_pdu;
 
-		rv = (*fptr)(str, len, oa, oa_len, oa_enc, msg, msg_enc);
+		rv = (*fptr)(str, len, oa, oa_len, oa_enc, msg, msg_enc, msg_ref, msg_parts, msg_part);
 	}
 
 	return rv;

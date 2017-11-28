@@ -1208,6 +1208,9 @@ static int at_response_cmgr (struct pvt* pvt, const char * str, size_t len)
 	char		from_number_utf8_str[1024];
 	char		text_base64[16384];
 	size_t		msg_len;
+	int			msg_ref;
+	int			msg_parts;
+	int			msg_part;
 
 	const struct at_queue_cmd * ecmd = at_queue_head_cmd (pvt);
 
@@ -1221,7 +1224,7 @@ static int at_response_cmgr (struct pvt* pvt, const char * str, size_t len)
 		pvt_try_restate(pvt);
 
 		cmgr = err_pos = ast_strdupa (str);
-		err = at_parse_cmgr (&err_pos, len, oa, sizeof(oa), &oa_enc, &msg, &msg_enc);
+		err = at_parse_cmgr (&err_pos, len, oa, sizeof(oa), &oa_enc, &msg, &msg_enc,  &msg_ref, &msg_parts, &msg_part);
 		if (err)
 		{
 			ast_log (LOG_WARNING, "[%s] Error parsing incoming message '%s' at possition %d: %s\n", PVT_ID(pvt), str, (int)(err_pos - cmgr), err);
@@ -1267,11 +1270,19 @@ static int at_response_cmgr (struct pvt* pvt, const char * str, size_t len)
 		manager_event_new_sms(PVT_ID(pvt), number, msg);
 		manager_event_new_sms_base64(PVT_ID(pvt), number, text_base64);
 		{
+			char bufRef[15], bufParts[15], bufPart[15];
+			sprintf(bufRef, "%d", msg_ref);
+			sprintf(bufParts, "%d", msg_parts);
+			sprintf(bufPart, "%d", msg_part);
+
 			channel_var_t vars[] =
 			{
 				{ "SMS", msg } ,
 				{ "SMS_BASE64", text_base64 },
 				{ "CMGR", (char *)str },
+				{ "REF", bufRef },
+				{ "PARTS", bufParts },
+				{ "PART", bufPart },
 				{ NULL, NULL },
 			};
 			start_local_channel (pvt, "sms", number, vars);
