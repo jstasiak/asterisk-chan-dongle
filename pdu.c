@@ -181,43 +181,48 @@
 		  ...
 */
 
+/* 3GPP TS 23.040 */
 #define NUMBER_TYPE_INTERNATIONAL		0x91
+#define NUMBER_TYPE_NETWORKSHORT		0xB1
+#define NUMBER_TYPE_UNKNOWN				0x81
+#define NUMBER_TYPE_NATIONAL			0xC8
+#define NUMBER_TYPE_ALPHANUMERIC		0xD0
 
 /* Message Type Indicator Parameter */
-#define PDUTYPE_MTI_SHIFT			0
+#define PDUTYPE_MTI_SHIFT				0
 #define PDUTYPE_MTI_SMS_DELIVER			(0x00 << PDUTYPE_MTI_SHIFT)
-#define PDUTYPE_MTI_SMS_DELIVER_REPORT		(0x00 << PDUTYPE_MTI_SHIFT)
+#define PDUTYPE_MTI_SMS_DELIVER_REPORT	(0x00 << PDUTYPE_MTI_SHIFT)
 #define PDUTYPE_MTI_SMS_SUBMIT			(0x01 << PDUTYPE_MTI_SHIFT)
-#define PDUTYPE_MTI_SMS_SUBMIT_REPORT		(0x01 << PDUTYPE_MTI_SHIFT)
-#define PDUTYPE_MTI_SMS_STATUS_REPORT		(0x02 << PDUTYPE_MTI_SHIFT)
+#define PDUTYPE_MTI_SMS_SUBMIT_REPORT	(0x01 << PDUTYPE_MTI_SHIFT)
+#define PDUTYPE_MTI_SMS_STATUS_REPORT	(0x02 << PDUTYPE_MTI_SHIFT)
 #define PDUTYPE_MTI_SMS_COMMAND			(0x02 << PDUTYPE_MTI_SHIFT)
 #define PDUTYPE_MTI_RESERVED			(0x03 << PDUTYPE_MTI_SHIFT)
 
-#define PDUTYPE_MTI_MASK			(0x03 << PDUTYPE_MTI_SHIFT)
+#define PDUTYPE_MTI_MASK				(0x03 << PDUTYPE_MTI_SHIFT)
 #define PDUTYPE_MTI(pdutype)			((pdutype) & PDUTYPE_MTI_MASK)
 
 /* Reject Duplicate */
-#define PDUTYPE_RD_SHIFT			2
-#define PDUTYPE_RD_ACCEPT			(0x00 << PDUTYPE_RD_SHIFT)
-#define PDUTYPE_RD_REJECT			(0x01 << PDUTYPE_RD_SHIFT)
+#define PDUTYPE_RD_SHIFT				2
+#define PDUTYPE_RD_ACCEPT				(0x00 << PDUTYPE_RD_SHIFT)
+#define PDUTYPE_RD_REJECT				(0x01 << PDUTYPE_RD_SHIFT)
 
 /* Validity Period Format */
-#define PDUTYPE_VPF_SHIFT			3
+#define PDUTYPE_VPF_SHIFT				3
 #define PDUTYPE_VPF_NOT_PRESENT			(0x00 << PDUTYPE_VPF_SHIFT)
 #define PDUTYPE_VPF_RESERVED			(0x01 << PDUTYPE_VPF_SHIFT)
 #define PDUTYPE_VPF_RELATIVE			(0x02 << PDUTYPE_VPF_SHIFT)
 #define PDUTYPE_VPF_ABSOLUTE			(0x03 << PDUTYPE_VPF_SHIFT)
 
 /* Status Report Request */
-#define PDUTYPE_SRR_SHIFT			5
+#define PDUTYPE_SRR_SHIFT				5
 #define PDUTYPE_SRR_NOT_REQUESTED		(0x00 << PDUTYPE_SRR_SHIFT)
 #define PDUTYPE_SRR_REQUESTED			(0x01 << PDUTYPE_SRR_SHIFT)
 
 /* User Data Header Indicator */
-#define PDUTYPE_UDHI_SHIFT			6
+#define PDUTYPE_UDHI_SHIFT				6
 #define PDUTYPE_UDHI_NO_HEADER			(0x00 << PDUTYPE_UDHI_SHIFT)
 #define PDUTYPE_UDHI_HAS_HEADER			(0x01 << PDUTYPE_UDHI_SHIFT)
-#define PDUTYPE_UDHI_MASK			(0x01 << PDUTYPE_UDHI_SHIFT)
+#define PDUTYPE_UDHI_MASK				(0x01 << PDUTYPE_UDHI_SHIFT)
 #define PDUTYPE_UDHI(pdutype)			((pdutype) & PDUTYPE_UDHI_MASK)
 
 /* eply Path Parameter */
@@ -229,6 +234,7 @@
 
 #define PDU_PID_SMS				0x00		/* bit5 No interworking, but SME-to-SME protocol = SMS */
 #define PDU_PID_EMAIL				0x32		/* bit5 Telematic interworking, bits 4..0 0x 12  = email */
+#define PDU_PID_SMS_REPLACE_MASK		0x40		/* bit7 Replace Short Message function activated (TP-PID = 0x41 to 0x47) */
 
 /* DCS */
 /*   bits 1..0 Class */
@@ -406,7 +412,7 @@ static int pdu_parse_byte(char ** digits2hex, size_t * length)
 }
 
 /*!
- * \brief Store number in PDU 
+ * \brief Store number in PDU
  * \param buffer -- pointer to place where number will be stored, CALLER MUST be provide length + 2 bytes of buffer
  * \param number -- phone number w/o leading '+'
  * \param length -- length of number
@@ -431,10 +437,10 @@ static int pdu_store_number(char* buffer, const char* number, unsigned length)
 }
 
 /*
-failed parse 07 91  97 62 02 00 01 F9  44  14 D0 F7 FB DD D5 2E 9F C3 E6 B7 1B  0008117050815073618C0500037A020100680066006C0067006800200066006800670020006800640066006A006C006700680066006400680067000A002F00200415043604350434043D04350432043D044B04390020043B04380447043D044B043900200433043E0440043E0441043A043E043F003A0020002A003500300035002300360023002000200028003300200440002F0441 
+failed parse 07 91  97 62 02 00 01 F9  44  14 D0 F7 FB DD D5 2E 9F C3 E6 B7 1B  0008117050815073618C0500037A020100680066006C0067006800200066006800670020006800640066006A006C006700680066006400680067000A002F00200415043604350434043D04350432043D044B04390020043B04380447043D044B043900200433043E0440043E0441043A043E043F003A0020002A003500300035002300360023002000200028003300200440002F0441
 
                                               ^^  not a international format
-failed parse 07 91  97 30 07 11 11 F1  04  14 D0 D9B09B5CC637DFEE721E0008117020616444617E041A043E04340020043F043E04340442043204350440043604340435043D0438044F003A00200036003900320037002E0020041D0438043A043E043C04430020043D043500200441043E043E043104490430043904420435002C002004320432043504340438044204350020043D0430002004410430043904420435002E 
+failed parse 07 91  97 30 07 11 11 F1  04  14 D0 D9B09B5CC637DFEE721E0008117020616444617E041A043E04340020043F043E04340442043204350440043604340435043D0438044F003A00200036003900320037002E0020041D0438043A043E043C04430020043D043500200441043E043E043104490430043904420435002C002004320432043504340438044204350020043D0430002004410430043904420435002E
                                               ^^  not a international format
 */
 #/* reverse of pdu_store_number() */
@@ -452,9 +458,17 @@ static int pdu_parse_number(char ** pdu, size_t * pdu_length, unsigned digits, i
 		unsigned syms = ROUND_UP2(digits);
 		if(syms <= *pdu_length)
 		{
-			char digit;
+			signed char digit;
 			if(*toa == NUMBER_TYPE_INTERNATIONAL)
 				*number++ = '+';
+				// BEGIN oioki proposed patch 2013-07-24
+				if(*toa == NUMBER_TYPE_ALPHANUMERIC)
+				{
+					for(; syms > 0; syms --, *pdu += 1, *pdu_length -= 1)
+						*number++ = pdu[0][0];
+						return *pdu - begin;
+				}
+				// END oioki proposed patch 2013-07-24<
 			for(; syms > 0; syms -= 2, *pdu += 2, *pdu_length -= 2)
 			{
 				digit = pdu_code2digit(pdu[0][1]);
@@ -562,8 +576,15 @@ EXPORT_DEF int pdu_build(char* buffer, size_t length, const char* sca, const cha
 	if(sca[0] == '+')
 		sca++;
 
-	if(dst[0] == '+')
+	if(dst[0] == '+') {
 		dst++;
+	} else {
+		if (strlen(dst)<6) {
+			dst_toa=NUMBER_TYPE_NETWORKSHORT; // 0xb1
+		} else {
+			dst_toa=NUMBER_TYPE_UNKNOWN; // 0x81
+		}
+	}
 
 	/* count length of strings */
 	sca_len = strlen(sca);
@@ -664,7 +685,9 @@ static str_encoding_t pdu_dcs_alpabet2encoding(int alpabet)
  * \return 0 on success
  */
 /* TODO: split long function */
-EXPORT_DEF const char * pdu_parse(char ** pdu, size_t tpdu_length, char * oa, size_t oa_len, str_encoding_t * oa_enc, char ** msg, str_encoding_t * msg_enc)
+EXPORT_DEF const char * pdu_parse(char ** pdu, size_t tpdu_length, char * oa, size_t oa_len,
+								  str_encoding_t * oa_enc, char ** msg, str_encoding_t * msg_enc,
+								  int* msg_ref, int* msg_parts, int* msg_part)
 {
 	const char * err = NULL;
 	size_t pdu_length = strlen(*pdu);
@@ -690,10 +713,12 @@ EXPORT_DEF const char * pdu_parse(char ** pdu, size_t tpdu_length, char * oa, si
 					{
 						int pid = pdu_parse_byte(pdu, &pdu_length);
 						*oa_enc = STR_ENCODING_7BIT;
+						if (oa_toa==NUMBER_TYPE_ALPHANUMERIC)
+							*oa_enc = STR_ENCODING_7BIT_HEX;
 						if(pid >= 0)
 						{
 						   /* TODO: support other types of messages */
-						   if(pid == PDU_PID_SMS)
+						   if( (pid == PDU_PID_SMS) || (pid & PDU_PID_SMS_REPLACE_MASK) )
 						   {
 							int dcs = pdu_parse_byte(pdu, &pdu_length);
 							if(dcs >= 0)
@@ -733,9 +758,20 @@ EXPORT_DEF const char * pdu_parse(char ** pdu, size_t tpdu_length, char * oa, si
 													/* NOTE: UDHL count octets no need calculation */
 													if(pdu_length >= (size_t)(udhl * 2))
 													{
-														/* skip UDH */
+														/* skip UDH
 														*pdu += udhl * 2;
-														pdu_length -= udhl * 2;
+														pdu_length -= udhl * 2; */
+
+														/* Information element identifier */
+														pdu_parse_byte(pdu, &pdu_length);
+														/* Reminder length */
+														pdu_parse_byte(pdu, &pdu_length);
+														/* CSMS reference number  */
+														*msg_ref = pdu_parse_byte(pdu, &pdu_length);
+														/* Total number of parts  */
+														*msg_parts = pdu_parse_byte(pdu, &pdu_length);
+														/* This part's number  */
+														*msg_part = pdu_parse_byte(pdu, &pdu_length);
 													}
 													else
 													{

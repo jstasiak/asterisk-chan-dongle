@@ -8,7 +8,7 @@
 #undef BUILD_APPLICATIONS
 
 /* Build Manager extentions */
-#undef BUILD_MANAGER
+#define BUILD_MANAGER
 
 /* Define to 1 if you have the <fcntl.h> header file. */
 #undef HAVE_FCNTL_H
